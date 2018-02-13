@@ -6,17 +6,157 @@
     <meta name="msapplication-tap-highlight" content="no" />
     <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width" />
     <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline'; style-src 'self' 'unsafe-inline'; media-src *" />
-
+    <script src="jquery-3.2.1.min.js"></script>
     <link rel="stylesheet" type="text/css" href="style.css" >
-    <title>...</title>
+    <title>OrientierungsAPP</title>
 </head>
 
+<script type="text/javascript" src="cordova.js"></script>
+<script type="text/javascript">
+// onSuccess Callback
+  //   This method accepts a `Position` object, which contains
+  //   the current GPS coordinates
+  //
+  function onSuccess(position) {
+      var element = document.getElementById('geolocation');
+      element.innerHTML = 'Latitude: '  + position.coords.latitude      + '<br />' +
+                          'Longitude: ' + position.coords.longitude     + '<br />' +
+                          '<hr />'      + element.innerHTML;
+  }
+
+  // onError Callback receives a PositionError object
+  //
+  function onError(error) {
+      console.log('code: '    + error.code    + '\n' +
+            'message: ' + error.message + '\n');
+  }
+
+  // Options: throw an error if no update is received every 30 seconds.
+  //
+  var watchID = navigator.geolocation.watchPosition(onSuccess, onError, { timeout: 30000 });
+  console.log(watchID);
+  function drawIt( farbe ){
+    var e = document.getElementById("canvas_id");
+    var canv = e.getContext("2d");
+    canv.fillStyle = farbe;
+    canv.fillRect(50,50,200,200);
+    };
+
+
+  var projektevomserver = [];
+  $.ajax({
+    url:'http://54.209.31.24:20001/mapapp',
+    success:function(data){
+      projektevomserver = data.projects;
+
+      console.log(projektevomserver);
+      // SELECT BOX FUER ALLE PROJEKTE
+      var sel1 = $('<select id="selbox">').appendTo('#projekt');
+      $(projektevomserver).each(function() {
+        sel1.append($("<option>").attr('value',this.projectCode).text(this.projectName));
+      });
+    }
+  });//ajax
+
+  var projekte = [
+    {id : 0, text: 'Projekt-1', code: '1234', punkte:[{id:0,name:'Punkt-1', longitude:43.5122, latitude:16.55162}]},
+    {id : 1, text: 'Projekt-2', code: '5678', punkte:[{id:0,name:'Punkt-2', longitude:42.5122, latitude:15.55162}]},
+    {id : 2, text: 'Projekt-3', code: '9101', punkte:[{id:0,name:'Punkt-3', longitude:41.5122, latitude:14.55162},
+                                                      {id:1,name:'Punkt-31', longitude:43.5122, latitude:16.55162}]},
+    ];
+
+   $( document ).on( 'click', '#auswahl button', function() {
+    console.log($('#code').val());
+
+    // SECTION UMSCHALTEN
+    if ( $('#code').val() == $('#selbox').val() ) {
+        $( '#auswahl, #punktfinder' ).toggle();
+        for (let i = 0; i < projektevomserver.length; i++) {
+          if (projektevomserver[i].projectCode == $('#code').val() ) {
+              var punkte = projektevomserver[i].projectMarker;
+              $('#proj').text(projektevomserver[i].projectName);
+          }
+        }
+        // Aufbau 2. SELECT BOX (MARKIERUNGEN)
+        var sel2 = $('<select id="selbox">').insertBefore('#punktfinder div canvas');
+        $(punkte).each(function() {
+          sel2.append($("<option>").attr('value',this.markerId).text(this.markerName));
+        });
+        drawIt('red');
+      }else {
+        console.log('Code falsch');
+      }
+    });
+
+
+/*
+   $( document ).ready( function() {
+     // SELECT BOX FUER ALLE PROJEKTE
+     var sel1 = $('<select id="selbox">').appendTo('#projekt');
+     $(projekte).each(function() {
+       sel1.append($("<option>").attr('value',this.code).text(this.text));
+     });
+
+   });
+   */
+</script>
+<style>
+*{ margin:0; padding:0; }
+body { font:20px Arial; }
+section {	position:fixed;	top:0;	left:0;	right:0;	bottom:0; text-align:center; display:flex; align-items:center; justify-content:center; }
+section > div { max-width:65%; }
+button { font:20px Arial; font-weight:bold; border:none; background:#339900; color:#fff; margin:20px; padding:5px 25px; cursor:pointer; border-radius:15px; }
+#punktfinder {	display:none; }
+#punktfinder > div { width:324px; }
+#punktfinder h1 { font-size:18px; line-height:60px; }
+#punktfinder h1 > * { vertical-align:middle; }
+
+
+select#selbox {
+   -webkit-appearance: button;
+   -webkit-border-radius: 2px;
+   -webkit-box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.1);
+   -webkit-padding-end: 20px;
+   -webkit-padding-start: 2px;
+   -webkit-user-select: none;
+   background-image: url(http://i62.tinypic.com/15xvbd5.png), -webkit-linear-gradient(#FAFAFA, #F4F4F4 40%, #E5E5E5);
+   background-position: 97% center;
+   background-repeat: no-repeat;
+   border: 1px solid #AAA;
+   color: #555;
+   font-size: inherit;
+   margin: 20px;
+   overflow: hidden;
+   padding: 5px 10px;
+   text-overflow: ellipsis;
+   white-space: nowrap;
+   width: 300px;
+}
+
+
+</style>
+
 <body>
-    Hallo Welt!
-    <script type="text/javascript" src="cordova.js"></script>
-    <script type="text/javascript">
-       console.log( 'Hello world!' );
-    </script>
+
+  <section id="auswahl">
+    <div>
+      <h1>Projekt auswählen</h1>
+      <div id="projekt"></div>
+      Code: <input id="code" type="password" length="4"></br>
+      <button>Einloggen</button>
+    </div>
+  </section>
+
+  <section id="punktfinder">
+    <div>
+      <h1 id="proj"></h1> </br>
+      <div id="geolocation"></div>
+      <canvas id="canvas_id"></canvas>
+
+      </div>
+    </div>
+  </section>
+
 </body>
 
 </html>
